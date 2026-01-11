@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Risishortcuts
 // @namespace    RisishortcutsJVC
-// @version      1.0
+// @version      1.1
 // @description  Raccourci :texte: pour insérer un sticker Risibank.
 // @author       moyaona
 // @match        https://www.jeuxvideo.com/forums/*
@@ -337,13 +337,19 @@
                 if (container.querySelector('.rs-add-icon')) return;
                 const icon = document.createElement('div');
                 icon.className = 'rs-add-icon'; icon.textContent = '+';
-                icon.onclick = (e) => {
+                icon.onclick = async (e) => {
                     e.preventDefault(); e.stopPropagation();
-                    if (container.__vue__ && container.__vue__.media && container.__vue__.media.source_url) {
-                        const fullUrl = container.__vue__.media.source_url;
-                        const thumbUrl = container.querySelector('img').src;
-                        window.parent.postMessage({ type: 'RS_STICKER_SELECTED', payload: { fullUrl, thumbUrl } }, 'https://www.jeuxvideo.com');
+                    const thumbUrl = container.querySelector('img').src;
+                    let fullUrl;
+                    const id = thumbUrl.split('/').at(-2); // recup lid de image pour appel api
+                    try {
+                        const res = await fetch(`https://risibank.fr/api/v1/medias/${id}`);
+                        const json = await res.json(); // <— important
+                        fullUrl = json.source_url; // on recup l'url noelshack via api car elle n'est plus expose
+                    } catch (err) {
+                        console.error('[RisiShortcuts] fetch failed', err);
                     }
+                    window.parent.postMessage({ type: 'RS_STICKER_SELECTED', payload: { fullUrl, thumbUrl } }, 'https://www.jeuxvideo.com');
                 };
                 container.appendChild(icon);
             });
